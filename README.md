@@ -1,0 +1,2 @@
+# Elia_Brutti_ComputerVision_Homework_2
+secondo homework
