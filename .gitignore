@@ -1,0 +1,11 @@
+# Dataset (downloaded automatically by torchvision)
+data/
+
+# Virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+
+# macOS
+.DS_Store
