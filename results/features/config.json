@@ -1,0 +1,23 @@
+{
+  "approach": "features",
+  "classifier": "LogisticRegression",
+  "scaler": "StandardScaler (fitted on training features only)",
+  "feature_dim": 576,
+  "c_values": [
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    1,
+    10
+  ],
+  "best_c": 0.01,
+  "best_val_acc": 0.8822463768115942,
+  "train_acc_eval": 0.9865728900255755,
+  "extraction_time_s": 19.334373958999997,
+  "classifier_time_s": 1.0774342919999995,
+  "trainable_params": 0
+}

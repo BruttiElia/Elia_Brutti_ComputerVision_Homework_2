@@ -12,6 +12,7 @@ from data import get_dataloaders
 from models import build_model, freeze_backbone, count_trainable_params
 from train import train_model, evaluate
 from utils import set_seed, get_device, save_json, save_csv
+from features import run_feature_extraction
 
 SEED = 42
 BATCH_SIZE = 32
@@ -86,8 +87,12 @@ def run_finetuning(approach):
     print(f"Best epoch: {best_epoch}  val_acc={best_val_acc:.4f}  time={train_time:.0f}s")
 
 
+
 if __name__ == "__main__":
     args = parse_args()
     print("Approach:", args.approach)
+    set_seed(SEED)
     if args.approach in ("full", "head"):
         run_finetuning(args.approach)
+    else:
+        run_feature_extraction(RESULTS_DIR / "features", batch_size=BATCH_SIZE)
