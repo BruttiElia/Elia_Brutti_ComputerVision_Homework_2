@@ -1,0 +1,11 @@
+true,predicted,count,share_of_true_class
+Birman,Ragdoll,22,0.22
+American Pit Bull Terrier,Staffordshire Bull Terrier,18,0.18
+American Pit Bull Terrier,American Bulldog,15,0.15
+American Pit Bull Terrier,German Shorthaired,13,0.13
+Basset Hound,Beagle,12,0.12
+Ragdoll,Birman,11,0.11
+Newfoundland,English Cocker Spaniel,10,0.1
+Staffordshire Bull Terrier,American Bulldog,10,0.112
+English Setter,English Cocker Spaniel,9,0.09
+Pomeranian,Samoyed,9,0.09

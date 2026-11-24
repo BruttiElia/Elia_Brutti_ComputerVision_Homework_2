@@ -1,0 +1,11 @@
+true,predicted,count,share_of_true_class
+British Shorthair,Russian Blue,34,0.34
+Bengal,Maine Coon,20,0.2
+Basset Hound,Beagle,16,0.16
+Birman,Ragdoll,15,0.15
+Ragdoll,Birman,14,0.14
+American Pit Bull Terrier,Staffordshire Bull Terrier,12,0.12
+Miniature Pinscher,Chihuahua,12,0.12
+Bengal,Egyptian Mau,11,0.11
+Ragdoll,Persian,11,0.11
+Sphynx,Chihuahua,11,0.11
