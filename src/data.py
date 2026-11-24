@@ -60,7 +60,7 @@ def get_dataloaders(batch_size=32):
     trainval_train = datasets.OxfordIIITPet(root=DATA_ROOT, split="trainval", target_types="category", download=True, transform=train_transform)
     trainval_val  = datasets.OxfordIIITPet(root=DATA_ROOT, split="trainval", target_types="category", download=True, transform=eval_transform)
     test_dataset   = datasets.OxfordIIITPet(root=DATA_ROOT, split="test", target_types="category", download=True, transform=eval_transform)
-
+    
 
     train_file = SPLITS_DIR / "train.csv"
     val_file = SPLITS_DIR / "val.csv"
@@ -84,10 +84,12 @@ def get_dataloaders(batch_size=32):
 
     train_dataset = Subset(trainval_train, train_idx)
     val_dataset = Subset(trainval_val, val_idx)
+    train_eval_dataset = Subset(trainval_val, train_idx)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    train_eval_loader = DataLoader(train_eval_dataset, batch_size=batch_size, shuffle=False)
 
 
     # Images per breed in each split
@@ -110,7 +112,7 @@ def get_dataloaders(batch_size=32):
 
     print(f"Split: {len(train_idx)} train, {len(val_idx)} val, {len(test_labels)} test")
 
-    return train_loader, val_loader, test_loader, classes
+    return train_loader, train_eval_loader, val_loader, test_loader, classes
 
 if __name__ == "__main__":
-    train_loader, val_loader, test_loader, classes = get_dataloaders()
+    train_loader, train_eval_loader, val_loader, test_loader, classes = get_dataloaders()

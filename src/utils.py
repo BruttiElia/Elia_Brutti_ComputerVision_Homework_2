@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import csv
 
 SEED = 42                     # seed for reproducibility
 
@@ -33,3 +34,11 @@ def save_json(data, path):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
+
+def save_csv(rows, path):
+    """Save a list of dictionaries (one per row) to a CSV file."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)

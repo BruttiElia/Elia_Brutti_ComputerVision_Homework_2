@@ -1,0 +1,17 @@
+{
+  "approach": "full",
+  "seed": 42,
+  "batch_size": 32,
+  "num_epochs": 30,
+  "learning_rate": 0.0001,
+  "optimizer": "Adam",
+  "loss": "CrossEntropyLoss",
+  "trainable_params": 1555781,
+  "train_acc_eval": 0.9971227621483376,
+  "best_epoch": 26,
+  "best_val_acc": 0.9021739130434783,
+  "train_time_s": 368.00000995799996,
+  "device": "mps",
+  "torch_version": "2.8.0",
+  "torchvision_version": "0.23.0"
+}
