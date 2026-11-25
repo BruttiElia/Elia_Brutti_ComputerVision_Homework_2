@@ -14,11 +14,11 @@ from train import train_model, evaluate
 from utils import set_seed, get_device, save_json, save_csv
 from features import run_feature_extraction
 
-SEED = 42
+SEED = 42                                       # same seed for every run (Python, NumPy, PyTorch)
 BATCH_SIZE = 32
-NUM_EPOCHS = {"full": 30, "head": 15}
+NUM_EPOCHS = {"full": 30, "head": 15}           # fixed number of epochs; the best one is chosen on validation
 LEARNING_RATES = {"full": 1e-4, "head": 1e-3}   # one learning rate per approach
-RESULTS_DIR = Path("results")                    # where to save metrics and checkpoints
+RESULTS_DIR = Path("results")                   # where to save metrics and checkpoints
 
 
 def parse_args():
@@ -37,14 +37,14 @@ def run_finetuning(approach):
 
     model = build_model()
     if approach == "head":
-        freeze_backbone(model)                                    
+        freeze_backbone(model)  # head training: freeze the convolutional feature extractor                                  
     model = model.to(device)
 
     n_trainable = count_trainable_params(model)
     print("Trainable parameters:", n_trainable)
 
-    criterion = nn.CrossEntropyLoss()
-    trainable = [p for p in model.parameters() if p.requires_grad]
+    criterion = nn.CrossEntropyLoss()   # loss over the 37 breeds
+    trainable = [p for p in model.parameters() if p.requires_grad]  # only the parameters that are not frozen
     optimizer = optim.Adam(trainable, lr=LEARNING_RATES[approach]) 
 
     out_dir = RESULTS_DIR / approach              # results/full or results/head
@@ -57,7 +57,7 @@ def run_finetuning(approach):
 
     # 2. Train accuracy under test conditions (no augmentation, eval mode), for the train/test gap
     y_tr, p_tr = evaluate(model, train_eval_loader, device)
-    train_acc_eval = float((y_tr == p_tr).mean())
+    train_acc_eval = float((y_tr == p_tr).mean())   # fraction of correct predictions
     print(f"Train accuracy (eval mode): {train_acc_eval:.4f}")
 
     # 3. Configuration and selected checkpoint (required for reproducibility)
@@ -91,8 +91,8 @@ def run_finetuning(approach):
 if __name__ == "__main__":
     args = parse_args()
     print("Approach:", args.approach)
-    set_seed(SEED)
-    if args.approach in ("full", "head"):
+    set_seed(SEED)  # set the seeds before anything else
+    if args.approach in ("full", "head"):    # approaches 1 and 2: PyTorch training
         run_finetuning(args.approach)
-    else:
+    else:   # approach 3: frozen features + scikit-learn
         run_feature_extraction(RESULTS_DIR / "features", batch_size=BATCH_SIZE)

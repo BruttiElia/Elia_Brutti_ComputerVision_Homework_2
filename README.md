@@ -186,3 +186,26 @@ Full details in `results/summary.csv`.
   The extracted features were checked to be finite, and only these warnings are
   suppressed in `src/features.py`.
  
+## Troubleshooting
+
+**`SSL: CERTIFICATE_VERIFY_FAILED` when downloading the dataset**
+
+Python cannot verify the certificate of the download server. This happens, for example,
+on macOS with Python installed from python.org, or behind networks/antivirus software
+that inspect HTTPS traffic. With the virtual environment active, run the commands below
+and then run the program again. The variable only applies to the current terminal and
+is needed only for the first run, when the dataset is downloaded.
+
+macOS / Linux (tested on macOS):
+
+```bash
+pip install --upgrade certifi
+export SSL_CERT_FILE=$(python -c "import certifi; print(certifi.where())")
+```
+
+Windows, PowerShell (not tested):
+
+```powershell
+pip install --upgrade certifi
+$env:SSL_CERT_FILE = python -c "import certifi; print(certifi.where())"
+```

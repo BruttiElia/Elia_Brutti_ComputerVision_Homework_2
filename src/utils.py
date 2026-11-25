@@ -16,8 +16,8 @@ def set_seed(seed=SEED):
     np.random.seed(seed)
     torch.manual_seed(seed)                     # also seeds CUDA and MPS
     torch.backends.cudnn.deterministic = True   # deterministic algorithms on CUDA
-    torch.backends.cudnn.benchmark = False
-
+    torch.backends.cudnn.benchmark = False      # do not auto-select the fastest (possibly non-deterministic) algorithm
+    # torch.use_deterministic_algorithms is not enabled; MPS training remains not fully deterministic
 
 def get_device():
     """Return the best available device: cuda, then mps, then cpu."""
@@ -31,14 +31,14 @@ def get_device():
 
 def save_json(data, path):
     """Save a dictionary (hyperparameters, metrics) to a JSON file."""
-    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).parent.mkdir(parents=True, exist_ok=True) # create the folder if it does not exist
     with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2) # indented: readable by hand
 
 def save_csv(rows, path):
     """Save a list of dictionaries (one per row) to a CSV file."""
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))  # column names = keys of the first row
         writer.writeheader()
         writer.writerows(rows)

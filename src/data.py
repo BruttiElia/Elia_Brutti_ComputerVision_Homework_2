@@ -6,7 +6,6 @@ of the official trainval partition, and the DataLoaders used by all three
 transfer-learning approaches.
 """
 
-import torch
 import csv
 from collections import Counter
 from pathlib import Path
@@ -15,11 +14,11 @@ from torchvision import datasets, transforms
 from torchvision.models import MobileNet_V3_Small_Weights
 from sklearn.model_selection import train_test_split
 
-DATA_ROOT = Path("data")      # where torchvision downloads the dataset
-SPLITS_DIR = Path("splits")
+DATA_ROOT = Path("data")        # where torchvision downloads the dataset
+SPLITS_DIR = Path("splits")     # saved train/val split (CSV files)
 RESULTS_DIR = Path("results")
-VAL_FRACTION = 0.15           # fraction of trainval used for validation
-SEED = 42                     # seed for the train/val split
+VAL_FRACTION = 0.15             # fraction of trainval used for validation
+SEED = 42                       # seed for the train/val split
 
 def save_split(path, indices, dataset):
     """Write one row per image: index, file name, label, breed name."""
@@ -38,7 +37,12 @@ def load_split(path):
 
 
 def get_dataloaders(batch_size=32):
-    """Build the train/val/test DataLoaders (stratified split, saved in splits/)."""
+    """Build the train/val/test DataLoaders (stratified split, saved in splits/).
+
+    Returns train_loader (augmented), train_eval_loader (train images without
+    augmentation, for the clean training accuracy), val_loader, test_loader
+    and the list of breed names.
+    """
 
     SPLITS_DIR.mkdir(exist_ok=True)    
     RESULTS_DIR.mkdir(exist_ok=True)
@@ -47,7 +51,7 @@ def get_dataloaders(batch_size=32):
     weights = MobileNet_V3_Small_Weights.DEFAULT
     eval_transform = weights.transforms()
 
-
+    # Train: light augmentation that keeps the breed recognizable (no vertical flip, no color changes)
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(224),   # random crop, output size expected by the network
         transforms.RandomHorizontalFlip(),   # left/right mirroring
@@ -66,11 +70,11 @@ def get_dataloaders(batch_size=32):
     val_file = SPLITS_DIR / "val.csv"
 
     if train_file.exists() and val_file.exists():
-        # Split already created: reuse it
+        # Split already created: reuse it, so every run and approach uses the same images
         train_idx = load_split(train_file)
         val_idx = load_split(val_file)
     else:
-        # First run: create the stratified split and save it
+        # First run: create the stratified split (same breed proportions in train and val) and save it
         indices = list(range(len(trainval_val)))
         train_idx, val_idx = train_test_split(
             indices,
@@ -81,18 +85,18 @@ def get_dataloaders(batch_size=32):
         save_split(train_file, train_idx, trainval_val)
         save_split(val_file, val_idx, trainval_val)
 
-
+    # Subsets: train with augmentation, val without, and train without augmentation (clean train accuracy)
     train_dataset = Subset(trainval_train, train_idx)
     val_dataset = Subset(trainval_val, val_idx)
     train_eval_dataset = Subset(trainval_val, train_idx)
 
+    # Only the training loader is shuffled; evaluation always sees the images in the same order
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
     train_eval_loader = DataLoader(train_eval_dataset, batch_size=batch_size, shuffle=False)
 
-
-    # Images per breed in each split
+    # Images per breed in each split, saved to results/class_counts.csv (checks class balance)
     classes = trainval_val.classes
 
     train_labels = [trainval_val._labels[i] for i in train_idx]
@@ -115,4 +119,5 @@ def get_dataloaders(batch_size=32):
     return train_loader, train_eval_loader, val_loader, test_loader, classes
 
 if __name__ == "__main__":
+    # Quick check: builds the loaders, creates the split files and class_counts.csv
     train_loader, train_eval_loader, val_loader, test_loader, classes = get_dataloaders()

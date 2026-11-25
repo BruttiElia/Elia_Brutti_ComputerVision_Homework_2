@@ -5,23 +5,25 @@ import json
 from pathlib import Path
 
 import matplotlib
-matplotlib.use("Agg")
+matplotlib.use("Agg")   # save figures to file without opening windows
 import matplotlib.pyplot as plt
 
 from utils import save_csv
 
 RESULTS_DIR = Path("results")
-FIGURES_DIR = RESULTS_DIR / "figures"
-LABELS = {"full": "1. Full fine-tuning", "head": "2. Classifier head", "features": "3. Features + LogReg"}
+FIGURES_DIR = RESULTS_DIR / "figures" # figures used in the report
+LABELS = {"full": "1. Full fine-tuning", "head": "2. Classifier head", "features": "3. Features + LogReg"}  # names in tables and titles
 LOGREG_PARAMS = 576 * 37 + 37      # weights + biases of the scikit-learn classifier (approach 3)
 
 
 def load_json(path):
+    """Read a JSON file (config.json, metrics.json)."""
     with open(path) as f:
         return json.load(f)
 
 
 def load_csv(path):
+    """Read a CSV file as a list of dicts, one per row."""
     with open(path, newline="") as f:
         return list(csv.DictReader(f))
 
@@ -35,7 +37,7 @@ def build_summary():
 
         if approach == "features":
             trainable = f"0 (network) + {LOGREG_PARAMS} (classifier)"
-            time_s = config["extraction_time_s"] + config["classifier_time_s"]
+            time_s = config["extraction_time_s"] + config["classifier_time_s"]  # extraction + classifier training (incl. search over C)
         else:
             trainable = config["trainable_params"]
             time_s = config["train_time_s"]
@@ -48,7 +50,7 @@ def build_summary():
             "train_acc": round(config["train_acc_eval"], 4),
             "test_acc": round(metrics["test_accuracy"], 4),
             "test_macro_f1": round(metrics["test_macro_f1"], 4),
-            "train_test_gap": round(config["train_acc_eval"] - metrics["test_accuracy"], 4),
+            "train_test_gap": round(config["train_acc_eval"] - metrics["test_accuracy"], 4),  # > 0: better on train than on test
         })
     return rows
 
@@ -57,12 +59,12 @@ def plot_training_curves():
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5), sharey=True)
     for ax, approach in zip(axes, ["full", "head"]):
         history = load_csv(RESULTS_DIR / approach / "history.csv")
-        best_epoch = load_json(RESULTS_DIR / approach / "config.json")["best_epoch"]
+        best_epoch = load_json(RESULTS_DIR / approach / "config.json")["best_epoch"] 
         epochs = [int(r["epoch"]) for r in history]
 
         ax.plot(epochs, [float(r["train_acc"]) for r in history], label="train (augmented, during epoch)")
         ax.plot(epochs, [float(r["val_acc"]) for r in history], label="validation")
-        ax.axvline(best_epoch, linestyle="--", color="gray", label=f"selected epoch ({best_epoch})")
+        ax.axvline(best_epoch, linestyle="--", color="gray", label=f"selected epoch ({best_epoch})")  # checkpoint reloaded at the end
         ax.set_title(LABELS[approach])
         ax.set_xlabel("epoch")
         ax.grid(alpha=0.3)
@@ -81,7 +83,7 @@ def plot_c_curve():
     val_accs = [float(r["val_acc"]) for r in rows]
 
     fig, ax = plt.subplots(figsize=(6, 4))
-    ax.semilogx(c_values, val_accs, marker="o")
+    ax.semilogx(c_values, val_accs, marker="o")      # log scale: C goes from 1e-4 to 10
     ax.axvline(best_c, linestyle="--", color="gray", label=f"selected C = {best_c}")
     ax.set_xlabel("C (log scale)")
     ax.set_ylabel("validation accuracy")
@@ -95,9 +97,9 @@ def plot_c_curve():
 
 if __name__ == "__main__":
     summary = build_summary()
-    save_csv(summary, RESULTS_DIR / "summary.csv")
+    save_csv(summary, RESULTS_DIR / "summary.csv") # results table of the report
     for row in summary:
         print(row)
-        FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-        plot_training_curves()
-        plot_c_curve()
+    FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    plot_training_curves()
+    plot_c_curve()

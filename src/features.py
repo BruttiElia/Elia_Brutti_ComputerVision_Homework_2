@@ -2,7 +2,6 @@
 
 import time
 import torch
-import numpy as np
 import warnings
 
 from sklearn.linear_model import LogisticRegression
@@ -15,16 +14,16 @@ from utils import get_device, save_csv, save_json
 
 C_VALUES = [0.0001, 0.0003, 0.001, 0.003, 0.01, 0.03, 0.1, 1, 10]      # regularization strengths tried on the validation set
 
-
+# no gradients: the network is only used for inference
 @torch.no_grad()
 def extract_features(extractor, loader, device):
     """Pass every image through the frozen extractor; return features (N x 576) and labels (N)."""
-    extractor.eval()
+    extractor.eval()    # evaluation mode: BatchNorm uses the stored ImageNet statistics
     all_feats, all_labels = [], []
 
     for images, labels in loader:
-        feats = extractor(images.to(device)) 
-        all_feats.append(feats.cpu())      
+        feats = extractor(images.to(device))    # (batch, 576) vectors after global average pooling
+        all_feats.append(feats.cpu())           # back to CPU: scikit-learn works on NumPy arrays   
         all_labels.append(labels)
 
     return torch.cat(all_feats).numpy(), torch.cat(all_labels).numpy()
@@ -33,7 +32,7 @@ def extract_features(extractor, loader, device):
 def run_feature_extraction(out_dir, batch_size=32):
     """Approach 3: extract frozen features, pick C on validation, evaluate once on test."""
     device = get_device()
-    _, train_eval_loader, val_loader, test_loader, classes = get_dataloaders(batch_size=batch_size)
+    _, train_eval_loader, val_loader, test_loader, classes = get_dataloaders(batch_size=batch_size)     # augmented train loader not needed
 
     extractor = build_feature_extractor().to(device)
 
@@ -51,16 +50,16 @@ def run_feature_extraction(out_dir, batch_size=32):
     val_scores = []
       
     # NumPy on macOS can emit spurious floating-point warnings in matmul;
-    # features were checked to be finite, so these warnings are silence
+    # features were checked to be finite, so these warnings are silenced
     with warnings.catch_warnings(): 
         warnings.filterwarnings("ignore", message=".*encountered in matmul", category=RuntimeWarning)
         for c in C_VALUES:
-            clf = make_pipeline(StandardScaler(), LogisticRegression(C=c, max_iter=2000))
-            clf.fit(X_train, y_train)                 
-            val_acc = clf.score(X_val, y_val)        
+            clf = make_pipeline(StandardScaler(), LogisticRegression(C=c, max_iter=2000))   # standardize features, then logistic regression
+            clf.fit(X_train, y_train)          # scaler and classifier fitted on training features only
+            val_acc = clf.score(X_val, y_val)  # accuracy on the validation set       
             val_scores.append({"C": c, "val_acc": val_acc})
             print(f"C={c}  val_acc={val_acc:.4f}")
-            if val_acc > best_val_acc:                
+            if val_acc > best_val_acc:         # strict ">": on a tie the C tried first is kept             
                 best_c, best_val_acc, best_clf = c, val_acc, clf
         classifier_time = time.perf_counter() - start
 
@@ -88,5 +87,6 @@ def run_feature_extraction(out_dir, batch_size=32):
     }
     save_json(config, out_dir / "config.json")
 
+    # One row per test image (true and predicted label), read by evaluate.py
     predictions = [{"true": int(t), "pred": int(p)} for t, p in zip(y_test, p_test)]
     save_csv(predictions, out_dir / "predictions.csv")

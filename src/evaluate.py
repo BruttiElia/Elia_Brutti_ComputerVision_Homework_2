@@ -1,4 +1,4 @@
-"""Test-set metrics for all approaches, computed from the saved predictions."""
+"""Test-set evaluation of all approaches from the saved predictions: metrics, confusion matrices, most confused pairs and example predictions."""
 
 import csv
 from pathlib import Path
@@ -26,7 +26,7 @@ def load_predictions(path):
 
 
 def compute_metrics(y_true, y_pred):
-    """Accuracy and macro-averaged F1 on the test set."""
+    """Accuracy and macro-averaged F1 on the test set (macro: every breed counts the same)."""
     return {
         "test_accuracy": float(accuracy_score(y_true, y_pred)),
         "test_macro_f1": float(f1_score(y_true, y_pred, average="macro")),
@@ -39,11 +39,11 @@ def get_class_names():
 
 
 def save_confusion_matrix(y_true, y_pred, class_names, path, title):
-    """Row-normalized confusion matrix with breed names."""
-    cm = confusion_matrix(y_true, y_pred, normalize="true")
+    """Row-normalized confusion matrix with breed names, saved as PNG (each row sums to 1)."""
+    cm = confusion_matrix(y_true, y_pred, normalize="true")     # each row divided by the number of test images of that breed
     fig, ax = plt.subplots(figsize=(14, 14))
     ConfusionMatrixDisplay(cm, display_labels=class_names).plot(
-        ax=ax, cmap="Blues", include_values=False, xticks_rotation=90, colorbar=False
+        ax=ax, cmap="Blues", include_values=False, xticks_rotation=90, colorbar=False   # 37x37 grid: colours only, no numbers in the cells
     )
     ax.set_title(title)
     fig.tight_layout()
@@ -63,10 +63,10 @@ def top_confused_pairs(y_true, y_pred, class_names, k=10):
                     "true": class_names[i],
                     "predicted": class_names[j],
                     "count": int(cm[i, j]),
-                    "share_of_true_class": round(float(cm[i, j] / (y_true == i).sum()), 3),
+                    "share_of_true_class": round(float(cm[i, j] / (y_true == i).sum()), 3), # fraction of that breed's test images predicted as this wrong breed
                 })
 
-    pairs.sort(key=lambda p: p["count"], reverse=True)
+    pairs.sort(key=lambda p: p["count"], reverse=True) # most frequent errors first
     return pairs[:k]
 
 def save_examples(y_true, y_pred, class_names, path, n=6, seed=42):
@@ -74,17 +74,17 @@ def save_examples(y_true, y_pred, class_names, path, n=6, seed=42):
     test_images = datasets.OxfordIIITPet(root="data", split="test")   # original images, no transform
     rng = np.random.default_rng(seed)                                  # fixed seed: same examples every run
 
-    correct_idx = np.where(y_true == y_pred)[0]         
-    wrong_idx = np.where(y_pred != y_true)[0]            
-    rows = [rng.choice(correct_idx, n, replace=False), rng.choice(wrong_idx, n, replace=False)]
+    correct_idx = np.where(y_true == y_pred)[0]    # indices of correct predictions     
+    wrong_idx = np.where(y_pred != y_true)[0]      # indices of wrong predictions      
+    rows = [rng.choice(correct_idx, n, replace=False), rng.choice(wrong_idx, n, replace=False)]     # n random examples per row, without repetitions
 
     fig, axes = plt.subplots(2, n, figsize=(3 * n, 7))
     for r, indices in enumerate(rows):
         for c, idx in enumerate(indices):
-            image, _ = test_images[idx]
+            image, _ = test_images[idx]     # PIL image; the label is not needed here
             ax = axes[r, c]
             ax.imshow(image)
-            ok = y_true[idx] == y_pred[idx]
+            ok = y_true[idx] == y_pred[idx] # green title if correct, red if wrong
             ax.set_title(f"True: {class_names[y_true[idx]]}\nPred: {class_names[y_pred[idx]]}",
                          fontsize=9, color="green" if ok else "red")
             ax.axis("off")
@@ -96,6 +96,7 @@ def save_examples(y_true, y_pred, class_names, path, n=6, seed=42):
 if __name__ == "__main__":
     class_names = get_class_names()           # once, before the loop: same names for all approaches
 
+    # For each approach: test metrics, confusion matrix and most confused pairs
     for approach in APPROACHES:
         y_true, y_pred = load_predictions(RESULTS_DIR / approach / "predictions.csv")
         metrics = compute_metrics(y_true, y_pred)
